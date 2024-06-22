@@ -1,0 +1,141 @@
+# #!/bin/bash
+
+sshpath="$HOME/.ssh"
+createsshcreds=0
+setgitcreds=0
+setsshcreds=0
+
+Usage() {
+    echo "|- Examples:"
+    echo "Create SSH credentials in $sshpath"
+    echo "$0 -c 'filename' 'email@example.com'"
+    echo
+    echo "Set SSH credentials from $sshpath"
+    echo "$0 -s 'filename'"
+    echo
+    echo "Get GIT credentials from current location"
+    echo "$0 who"
+    echo
+    echo "Set GIT credentials from current location"
+    echo "$0 -g 'username' 'email@example.com'"
+}
+
+Error() {
+    echo ">! Error: $1 not provided"
+}
+
+Check() {
+    echo ">! Error: $1 not defined"
+}
+
+Help() {
+     echo "Getter/Setter for GIT/SSH credentials"
+     echo
+     echo "|- Syntax: "
+     echo "$0 [-flag] [data]"
+     echo
+     echo "|- Options:"
+     echo "-c     Create SSH credentials in $sshpath"
+     echo "-s     Set SSH credentials from $sshpath"
+     echo "who    Get GIT credentials from current location"
+     echo "-g     Set GIT credentials from current location"
+     echo
+     Usage
+}
+
+while getopts ":hcsg" opt; do
+    case ${opt} in
+        h) help=1 ;;
+        c) createsshcreds=1 ;;
+        s) setsshcreds=1 ;;
+        g) setgitcreds=1 ;;
+        \?) Help; exit 1 ;;
+    esac
+done
+
+if [ -z "$1" ];then
+    Help
+    exit 0
+    
+fi
+
+# Check for help first
+if [ "$help" ]; then
+    Help
+    exit 0
+fi
+
+# Create SSH credentials
+if [ "$createsshcreds" -eq 1 ]; then
+    echo "[-] Creating credentials for email: '$3' in file: '$2'"
+    if [ -f "$sshpath/$2" ]; then
+        echo ">! Error: The file '$2' already exist, choose a different file name"
+        exit 1
+    fi
+    if [ -n "$2" ] && [ -n "$3" ]; then
+        echo "> email address: '$3' - file: '$2'"
+        if [ ! -d "$sshpath" ]; then
+            echo "[-] Creating ~/.ssh folder to hold credentials"
+            mkdir "$sshpath"
+            chmod 700 "$sshpath"
+        fi
+        # Generating a SSH key
+        ssh-keygen -t rsa -C "$3" -f "$sshpath/$2"
+        # enable ssh-agent
+        eval "$(ssh-agent -s)"
+        # Register with ssh-agent the new SSH Keys
+        ssh-add "$sshpath/$2"
+    else
+        Error "Username or Email address"
+        exit 1
+    fi
+fi
+
+# Set SSH credentials from current location
+if [ "$setsshcreds" -eq 1 ]; then
+    echo "[-] Set credentials for user: '$2'"
+    if [ ! -f "$sshpath/$2" ]; then
+        echo ">! Error: The file '$2' doesn't exist in '$HOME/.ssh'"
+        echo ">! the credential file name must match the username"
+        exit 1
+    fi
+    eval "$(ssh-agent -s)"
+    ssh-add "$sshpath/$2"
+fi
+
+# Get GIT credentials from current location
+if [ "$1" = "who" ]; then
+    if [ ! -d "$(pwd)/.git" ]; then
+        echo ">! Error: Current location is not a GIT repository"
+        exit 1
+    fi
+    echo "[-] Username:"
+    git config --local user.name 2>/dev/null \
+    || Check "Username"
+    echo
+    
+    echo "[-] Email address:"
+    git config --local user.email 2>/dev/null \
+    || Check "Email address"
+    echo
+    
+    echo "[-] Remote repository:"
+    git remote -v 2>/dev/null \
+    || Check "Remote repository"
+fi
+
+# Set GIT credentials from current location
+if [ "$setgitcreds" -eq 1 ]; then
+    echo "[-] Set credentials for user: '$2' with email: '$3'"
+    if [ ! -d "$(pwd)/.git" ]; then
+        echo ">! Error: Current location is not a GIT repository"
+        exit 1
+    fi
+    if [ ! -n "$2" ] || [ ! -n "$3" ]; then
+        Error "Username or Email address"
+        exit 1
+    fi
+    git config --local user.name "$2"
+    git config --local user.email "$3"
+fi
+
