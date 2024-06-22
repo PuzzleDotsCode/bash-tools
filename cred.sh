@@ -4,6 +4,13 @@ sshpath="$HOME/.ssh"
 createsshcreds=0
 setgitcreds=0
 setsshcreds=0
+sshconfigfile="$sshpath/config"
+
+# Colors
+## Warning
+YELLOW='\033[1;33m'
+## No color code (resets the color to default)
+NC='\033[0m'
 
 Error() {
     echo ">! Error: $1 not provided"
@@ -40,6 +47,8 @@ Help() {
     echo "|- Options:"
     echo "-c     Create SSH credentials in '$sshpath'"
     echo "-s     Set SSH credentials from '$sshpath'"
+    echo "cfg    Create SSH config file in '$sshpath' (required for SSH Identities in GIT)"
+    echo "-a     Add SSH identity in SSH config file in '$sshpath' (required for SSH Identities in GIT)"
     echo "get    Get SSH credentials files from '$sshpath'"
     echo "who    Get GIT credentials from current location"
     echo "-g     Set GIT credentials from current location"
@@ -47,11 +56,12 @@ Help() {
     Usage
 }
 
-while getopts ":hcsg" opt; do
+while getopts "a:hcsg" opt; do
     case ${opt} in
     h) help=1 ;;
     c) createsshcreds=1 ;;
     s) setsshcreds=1 ;;
+    a) adduser=$OPTARG ;;
     g) setgitcreds=1 ;;
     \?)
         Help
@@ -72,6 +82,26 @@ if [ "$help" ]; then
     exit 0
 fi
 
+ADD_CONFIG() {
+        echo "Host $1" >> "$sshconfigfile"
+        echo "  User git" >> "$sshconfigfile"
+        echo "  Hostname github.com" >> "$sshconfigfile"
+        echo "  IdentityFile $sshpath/$1" >> "$sshconfigfile"
+        echo "  IdentitiesOnly yes" >> "$sshconfigfile"
+        echo "" >> "$sshconfigfile"
+}
+
+CONFIG_FILE() {
+    if [ ! -f "$sshconfigfile" ]; then
+        echo "[-] Creating SSH config file... (required)"
+        touch "$sshconfigfile"
+        ADD_CONFIG "$1"
+    else
+        echo "[-] SSH config file exist (required)"
+        ADD_CONFIG "$1"
+    fi
+}
+
 # Create SSH credentials
 if [ "$createsshcreds" -eq 1 ]; then
     echo "[-] Creating credentials for email: '$3' in file: '$2'"
@@ -79,6 +109,9 @@ if [ "$createsshcreds" -eq 1 ]; then
         echo ">! Error: The file '$2' already exist, choose a different file name"
         exit 1
     fi
+    
+    CONFIG_FILE "$2"
+    
     if [ -n "$2" ] && [ -n "$3" ]; then
         echo "> email address: '$3' - file: '$2'"
         if [ ! -d "$sshpath" ]; then
@@ -108,6 +141,23 @@ if [ "$setsshcreds" -eq 1 ]; then
     fi
     eval "$(ssh-agent -s)"
     ssh-add "$sshpath/$2"
+fi
+
+# Add SSH identity in SSH config file in '$sshpath' (required for SSH Identities in GIT)
+if [ -n "$adduser" ]; then
+    echo "[-] Add of SSH user in $sshconfigfile for GIT use"
+
+    if [ ! -f "$sshpath/$adduser" ]; then
+        echo 
+        echo -e "${YELLOW}>! Warning: The credential file '$sshpath/$adduser' does't exist,"
+        echo -e ">! this means you are relating an user indentity not yet created ${NC}"
+        echo 
+    fi
+
+    CONFIG_FILE "$adduser"
+    echo "Host added: $adduser"
+    echo "IdentityFile related: $sshpath/$adduser"
+
 fi
 
 # Get SSH credentials files from $sshpath
@@ -157,8 +207,12 @@ if [ "$setgitcreds" -eq 1 ]; then
         echo ">! Error: Current location is not a GIT repository"
         exit 1
     fi
-    if [ ! -n "$2" ] || [ ! -n "$3" ]; then
-        Error "Username or Email address"
+    if [ ! -n "$2" ]; then
+        Error "Username"
+        exit 1
+    fi
+    if [ ! -n "$3" ]; then
+        Error "Email address"
         exit 1
     fi
     git config --local user.name "$2"
