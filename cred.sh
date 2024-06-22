@@ -84,10 +84,10 @@ fi
 
 ADD_CONFIG() {
         echo "Host $1" >> "$sshconfigfile"
+        echo "  HostName github.com" >> "$sshconfigfile"
         echo "  User git" >> "$sshconfigfile"
-        echo "  Hostname github.com" >> "$sshconfigfile"
         echo "  IdentityFile $sshpath/$1" >> "$sshconfigfile"
-        echo "  IdentitiesOnly yes" >> "$sshconfigfile"
+        # echo "  IdentitiesOnly yes" >> "$sshconfigfile"
         echo "" >> "$sshconfigfile"
 }
 
