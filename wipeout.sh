@@ -24,30 +24,39 @@ Help() {
 }
 
 Create_wipe() {
-    echo "Fresh /tmp evidence folder in '$WIPE'"
-    # create evidence folder
-    mkdir -p "$WIPE"
+    if [ ! -z "$1" ]; then
+        echo "Fresh /tmp evidence folder in '$1'"
+        # create evidence folder
+        mkdir -p "$1"
+    else
+        echo "Fresh /tmp evidence folder in '$WIPE'"
+        # create evidence folder
+        mkdir -p "$WIPE"
+    fi
+}
+
+Remove_data() {
+    echo "wipping files's '$1'"
+    find "$1" -type f -exec shred -u -n 5 -z {} \;
+    echo "wipping folder '$1'"
+    find "$1" -depth -type d -exec rm -rf {} \;
 }
 
 Delete_wipe() {
-    if [ ! -d "$WIPE" ]; then
-        echo "no evidence in location '$WIPE'"
+    if [ ! -d "$1" ]; then
+        echo "no evidence in location '$1'"
         exit 1
     fi
-    echo "evidence bye bye location '$WIPE'"
-    # create evidence folder
-    rm -r "$WIPE"
+    echo "evidence bye bye in location '$1'"
+    Remove_data "$1"
 }
 
 Refresh_wipe() {
-    if [ ! -d "$WIPE" ]; then
-        echo "no evidence in location '$WIPE'"
+    if [ ! -d "$1" ]; then
+        echo "no evidence in location '$1'"
         exit 1
     fi
-    echo "wipping files's '$WIPE'"
-    find "$WIPE" -type f -exec shred -u -n 5 -z {} \;
-    echo "wipping folder '$WIPE'"
-    find "$WIPE" -type d -empty -delete
+    Delete_wipe "$1"
     Create_wipe
 }
 
@@ -59,7 +68,21 @@ if [ ! -z "$1" ]; then
         Refresh_wipe
         exit 0
     elif [ "$1" = "-d" ]; then
-        Delete_wipe
+        if [ ! -z "$2" ]; then
+            Delete_wipe "$2"
+            exit 0
+        else
+            Delete_wipe "$WIPE"
+            exit 0
+        fi
+    elif [ "$1" = "-c" ]; then
+        if [ ! -z "$2" ]; then
+            Create_wipe "$2"
+            exit 0
+        else
+            Create_wipe "$WIPE"
+            exit 0
+        fi
         exit 0
     fi
 fi
