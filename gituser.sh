@@ -56,6 +56,19 @@ Help() {
     Usage
 }
 
+Syntax() {
+    echo "|- Syntax: cred [-flag] [data]"
+    echo
+    echo "Create SSH credentials in '$sshpath'"
+    echo "cred -c 'filename' 'email@example.com'"
+    echo
+    echo "Set SSH credentials from '$sshpath'"
+    echo "cred -s 'filename'"
+    echo
+    echo "Set GIT credentials from current location"
+    echo "cred -g 'username' 'email@example.com'"
+}
+
 while getopts "a:hcsg" opt; do
     case ${opt} in
     h) help=1 ;;
@@ -64,16 +77,15 @@ while getopts "a:hcsg" opt; do
     a) adduser=$OPTARG ;;
     g) setgitcreds=1 ;;
     \?)
-        Help
+        Syntax
         exit 1
         ;;
     esac
 done
 
 if [ -z "$1" ]; then
-    Help
+    Syntax
     exit 0
-
 fi
 
 # Check for help firĸst
@@ -87,8 +99,6 @@ ADD_CONFIG() {
     echo "  HostName github.com" >> "$sshconfigfile"
     echo "  User git" >> "$sshconfigfile"
     echo "  IdentityFile $sshpath/$1" >> "$sshconfigfile"
-    # echo "  IdentityFile ~/.ssh/$1" >> "$sshconfigfile"
-    # echo "  IdentitiesOnly yes" >>  "$sshconfigfile"
     echo "" >> "$sshconfigfile"
 }
 
@@ -155,7 +165,14 @@ if [ "$setsshcreds" -eq 1 ]; then
         exit 1
     fi
 
-    SSH_ADD_ID "$2"
+    # SSH_ADD_ID "$2"
+
+    # enable ssh-agent
+    eval "$(ssh-agent -s)"
+    # Register with ssh-agent the new SSH Keys
+    ssh-add "$sshpath/$1"
+    # List registered SSH Keys
+    ssh-add -l
 fi
 
 # Add SSH identity in SSH config file in '$sshpath' (required for SSH Identities in GIT)
