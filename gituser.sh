@@ -119,15 +119,43 @@ CONFIG_FILE() {
     fi
 }
 
+# SSH_ADD_ID() {
+#     # enable ssh-agent
+#     eval "$(ssh-agent -s)"
+#     # Register with ssh-agent the new SSH Keys
+#     ssh-add "$sshpath/$1"
+#     # List registered SSH Keys
+#     ssh-add -l
+#     # ssh -vT git@guthub.com
+# }
 SSH_ADD_ID() {
-    # enable ssh-agent
-    eval "$(ssh-agent -s)"
-    # Register with ssh-agent the new SSH Keys
+    # Start SSH agent if not already running
+    if [ -z "$SSH_AUTH_SOCK" ]; then
+        eval "$(ssh-agent -s)"
+    fi
+
+    echo "SSH_AUTH_SOCK: $SSH_AUTH_SOCK"
+
+    # Add SSH key to the agent
     ssh-add "$sshpath/$1"
-    # List registered SSH Keys
+    if [ $? -ne 0 ]; then
+        echo ">! Error adding SSH key"
+        exit 1
+    fi
+
+    # List registered SSH keys
     ssh-add -l
-    # ssh -vT git@guthub.com
+
+    # Test SSH connection to GitHub
+    ssh -T git@github.com
+    # if [ $? -ne 1 ]; then
+    #     echo ">! SSH key added and authenticated successfully!"
+    # else
+    #     echo ">! Error: SSH key failed to authenticate"
+    #     exit 1
+    # fi
 }
+
 
 # Create SSH credentials
 if [ "$createsshcreds" -eq 1 ]; then
