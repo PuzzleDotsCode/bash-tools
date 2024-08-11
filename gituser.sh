@@ -64,7 +64,12 @@ Syntax() {
     echo
     echo "Set SSH credentials from '$sshpath'"
     echo "cred -s 'filename'"
+
     echo
+    echo "Add SSH identity in SSH config file in '$sshpath' (required for SSH Identities in GIT)"
+    echo "cred -a 'filename'"
+    echo
+
     echo "Set GIT credentials from current location"
     echo "cred -g 'username' 'email@example.com'"
 }
@@ -106,7 +111,7 @@ CONFIG_FILE() {
     if [ ! -f "$sshconfigfile" ]; then
         echo "[-] Creating SSH config file... (required)"
         touch "$sshconfigfile"
-        chmod 600 "$sshconfigfile"
+        chmod +x "$sshconfigfile"
         ADD_CONFIG "$1"
     else
         echo "[-] SSH config file exist (required)"
@@ -121,8 +126,7 @@ SSH_ADD_ID() {
     ssh-add "$sshpath/$1"
     # List registered SSH Keys
     ssh-add -l
-
-
+    # ssh -vT git@guthub.com
 }
 
 # Create SSH credentials
@@ -146,8 +150,10 @@ if [ "$createsshcreds" -eq 1 ]; then
         # Generating a SSH key
         ssh-keygen -t rsa -C "$3" -f "$sshpath/$2"
         # file permissions
-        chmod 600 "$sshpath/$2"
-        chmod 644 "$sshpath/$2.pub"
+        # chmod 600 "$sshpath/$2"
+        chmod +x "$sshpath/$2"
+        # chmod 644 "$sshpath/$2.pub"
+        chmod +x "$sshpath/$2.pub"
 
         SSH_ADD_ID "$2"
     else
@@ -165,14 +171,7 @@ if [ "$setsshcreds" -eq 1 ]; then
         exit 1
     fi
 
-    # SSH_ADD_ID "$2"
-
-    # enable ssh-agent
-    eval "$(ssh-agent -s)"
-    # Register with ssh-agent the new SSH Keys
-    ssh-add "$sshpath/$1"
-    # List registered SSH Keys
-    ssh-add -l
+    SSH_ADD_ID "$2"
 fi
 
 # Add SSH identity in SSH config file in '$sshpath' (required for SSH Identities in GIT)
