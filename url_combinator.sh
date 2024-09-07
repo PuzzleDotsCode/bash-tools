@@ -1,5 +1,18 @@
 #!/bin/bash
 
+# script to combine words and create API routes to pentest
+# example:
+# url_combinator.sh api v1 graphql
+#
+# result:
+# /api/v1/graphql
+# /api/graphql/v1
+# /v1/api/graphql
+# /v1/graphql/api
+# /graphql/api/v1
+# /graphql/v1/api
+
+
 # Function to generate permutations
 generate_permutations() {
     local prefix=$1          # Current prefix (accumulated combination)

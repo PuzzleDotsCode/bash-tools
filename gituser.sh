@@ -178,10 +178,10 @@ if [ "$createsshcreds" -eq 1 ]; then
         # Generating a SSH key
         ssh-keygen -t rsa -C "$3" -f "$sshpath/$2"
         # file permissions
-        # chmod 600 "$sshpath/$2"
-        chmod +x "$sshpath/$2"
-        # chmod 644 "$sshpath/$2.pub"
-        chmod +x "$sshpath/$2.pub"
+        chmod 600 "$sshpath/$2"
+        # chmod +x "$sshpath/$2"
+        chmod 600 "$sshpath/$2.pub"
+        # chmod +x "$sshpath/$2.pub"
 
         SSH_ADD_ID "$2"
     else
