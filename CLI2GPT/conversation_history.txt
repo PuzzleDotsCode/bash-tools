@@ -1,0 +1,22 @@
+User Question: Prepare null or anonymous access for these port if applies
+Response: To prepare null or anonymous access for the discovered ports, the following services can typically be accessed with null or anonymous credentials:
+
+1. SMB (Ports 139, 445): If null or anonymous access is allowed, you can use tools like `smbclient` or `smbclient.py` to connect to SMB shares anonymously. Here is an example command for accessing an SMB share with null session:
+
+```
+smbclient -L //<target_IP>/ -U%
+```
+
+2. HTTP (Port 80, 443): If the web server allows anonymous access, you can simply navigate to the URLs in a web browser to access them. If there are directories disallowed in the `robots.txt`, you can try to access other directories that are openly accessible.
+
+3. LDAP (Ports 389, 636, 3268, 3269): For anonymous LDAP access, you can typically bind anonymously to the LDAP server. You can use tools like `ldapsearch` to query the LDAP server:
+
+```
+ldapsearch -H ldap://<target_IP>:389 -x -b "" -s base "(objectclass=*)"
+```
+
+4. Kerberos (Port 88): Kerberos authentication does not support anonymous access. You will need valid credentials to interact with the Kerberos service.
+
+5. RPC (Port 593): Microsoft RPC over HTTP usually requires authentication. Null or anonymous access may not be possible for this service.
+
+To confirm null or anonymous access, you will need to test connecting to the services with the appropriate tools. Remember to always ensure that you have permission to perform such activities on the target system before proceeding.
